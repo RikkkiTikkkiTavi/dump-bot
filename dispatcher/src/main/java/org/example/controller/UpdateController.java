@@ -43,11 +43,11 @@ public class UpdateController {
     //сортируем сообщения
     private void distributeMessageByType(Update update) {
         Message message = update.getMessage();
-        if (message.getText() != null) {
+        if (message.hasText()) {
             processTextMessageUpdate(update);
-        } else if (message.getDocument() != null) {
+        } else if (message.hasDocument()) {
             processDocumentMessageUpdate(update);
-        } else if (message.getPhoto() != null) {
+        } else if (message.hasPhoto()) {
             processPhotoMessageUpdate(update);
         } else {
             setUnsupportedMessageTypeView(update);
