@@ -3,8 +3,10 @@ package org.example.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j;
 import org.example.dao.AppDocumentDAO;
+import org.example.dao.AppPhotoDAO;
 import org.example.dao.BinaryContentDAO;
 import org.example.entity.AppDocument;
+import org.example.entity.AppPhoto;
 import org.example.entity.BinaryContent;
 import org.example.exception.UploadFileException;
 import org.json.JSONObject;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +40,8 @@ public class FileServiceImpl implements FileService {
     private final AppDocumentDAO appDocumentDAO;
     private final BinaryContentDAO binaryContentDAO;
 
+    private final AppPhotoDAO appPhotoDAO;
+
 
     @Override
     public AppDocument processDoc(Message telegramMessage) {
@@ -47,6 +52,21 @@ public class FileServiceImpl implements FileService {
             BinaryContent persistentBinaryContent = getPersistentBinaryContent(response);
             AppDocument transientAppDoc = buildTransientAppDoc(telegramDoc, persistentBinaryContent);
             return appDocumentDAO.save(transientAppDoc);
+        } else {
+            throw new UploadFileException("Bad response from telegram service: " + response);
+        }
+    }
+
+    @Override
+    public AppPhoto processPhoto(Message telegramMessage) {
+        PhotoSize telegramPhoto = telegramMessage.getPhoto().get(0);
+        String fileId = telegramPhoto.getFileId();
+        ResponseEntity<String> response = getFilePath(fileId);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            BinaryContent persistentBinaryContent = getPersistentBinaryContent(response);
+            AppPhoto transientAppPhoto = buildTransientAppPhoto(telegramPhoto, persistentBinaryContent);
+            return appPhotoDAO.save(transientAppPhoto);
         } else {
             throw new UploadFileException("Bad response from telegram service: " + response);
         }
@@ -77,6 +97,15 @@ public class FileServiceImpl implements FileService {
                 .fileSize(telegramDoc.getFileSize())
                 .build();
     }
+
+    private AppPhoto buildTransientAppPhoto(PhotoSize telegramPhoto, BinaryContent persistentBinaryContent) {
+        return AppPhoto.builder()
+                .telegramFileId(telegramPhoto.getFileId())
+                .binaryContent(persistentBinaryContent)
+                .fileSize(telegramPhoto.getFileSize())
+                .build();
+    }
+
 
     private ResponseEntity<String> getFilePath(String fileId) {
         RestTemplate restTemplate = new RestTemplate();

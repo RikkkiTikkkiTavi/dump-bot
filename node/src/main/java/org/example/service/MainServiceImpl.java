@@ -4,6 +4,7 @@ import lombok.extern.log4j.Log4j;
 import org.example.dao.AppUserDAO;
 import org.example.dao.RawDataDAO;
 import org.example.entity.AppDocument;
+import org.example.entity.AppPhoto;
 import org.example.entity.AppUser;
 import org.example.entity.RawData;
 import org.example.entity.enams.UserState;
@@ -49,7 +50,7 @@ public class MainServiceImpl implements MainService {
         } else if (BASIC_STATE.equals(userState)) {
             output = processServiceCommand(appUser, text);
         } else if (WAIT_FOR_EMAIL_STATE.equals(userState)) {
-            //TODO
+            //TODO наладить связь с почтовым ящиком
         } else {
             log.error("Unknown user state: " + userState);
             output = "Unknown error! Please enter /cancel and try again!";
@@ -89,6 +90,7 @@ public class MainServiceImpl implements MainService {
             return true;
         } else if (!BASIC_STATE.equals(userState)) {
             String error = "Cancel current command! Using the command: /cancel";
+            sendAnswer(error, chatId);
             return true;
         }
         return false;
@@ -103,8 +105,17 @@ public class MainServiceImpl implements MainService {
             return;
         }
 
-        String answer = "Photo has been load successfully! Download link: ";
-        sendAnswer(answer, chatId);
+        try {
+            AppPhoto photo = fileService.processPhoto(update.getMessage());
+
+            var answer = "Фото успешно загруженo! "
+                    + "Ссылка для скачивания: " + "link";
+            sendAnswer(answer, chatId);
+        } catch (UploadFileException e) {
+            log.error(e);
+            String error = "К сожалению, загрузка фото не удалась. Повторите попытку позже.";
+            sendAnswer(error, chatId);
+        }
     }
 
     private void sendAnswer(String output, Long chatId) {
@@ -115,15 +126,16 @@ public class MainServiceImpl implements MainService {
     }
 
     private String processServiceCommand(AppUser appUser, String cmd) {
-        if (REGISTRATION.equals(cmd)) {
-            //TODO
-            return "Temporarily unavailable";
-        } else if (HELP.equals(cmd)) {
+        var serviceCommand = ServiceCommand.fromValue(cmd);
+        if (REGISTRATION.equals(serviceCommand)) {
+            //TODO реализовать регистрацию пользователей
+            return "Функция в разработке!";
+        } else if (HELP.equals(serviceCommand)) {
             return help();
-        } else if (START.equals(cmd)) {
-            return "Access commands";
+        } else if (START.equals(serviceCommand)) {
+            return "Приветствую! Чтобы посмотреть список доступных команд введите /help";
         } else {
-            return "Unknown command! Please enter command /help";
+            return "Неизвестная команда! Чтобы посмотреть список доступных команд введите /help";
         }
     }
 
