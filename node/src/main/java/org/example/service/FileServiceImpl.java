@@ -9,6 +9,8 @@ import org.example.entity.AppDocument;
 import org.example.entity.AppPhoto;
 import org.example.entity.BinaryContent;
 import org.example.exception.UploadFileException;
+import org.example.service.enums.LinkType;
+import org.example.utils.CryptoTool;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -37,10 +39,13 @@ public class FileServiceImpl implements FileService {
     @Value("${service.file_storage.uri}")
     private String fileStorageUri;
 
+    @Value("${link.address}")
+    private String linkAddress;
+
     private final AppDocumentDAO appDocumentDAO;
     private final BinaryContentDAO binaryContentDAO;
-
     private final AppPhotoDAO appPhotoDAO;
+    private final CryptoTool cryptoTool;
 
 
     @Override
@@ -59,7 +64,9 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public AppPhoto processPhoto(Message telegramMessage) {
-        PhotoSize telegramPhoto = telegramMessage.getPhoto().get(0);
+        int photoSizeCount = telegramMessage.getPhoto().size();
+        int photoIndex = photoSizeCount > 1 ? telegramMessage.getPhoto().size() - 1 : 0;
+        PhotoSize telegramPhoto = telegramMessage.getPhoto().get(photoIndex);
         String fileId = telegramPhoto.getFileId();
         ResponseEntity<String> response = getFilePath(fileId);
 
@@ -106,7 +113,6 @@ public class FileServiceImpl implements FileService {
                 .build();
     }
 
-
     private ResponseEntity<String> getFilePath(String fileId) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -139,4 +145,9 @@ public class FileServiceImpl implements FileService {
         }
     }
 
+    @Override
+    public String generateLink(Long docId, LinkType linkType) {
+        String hash = cryptoTool.hashOf(docId);
+        return "http://" + linkAddress + "/" + linkType + "?id=" + hash;
+    }
 }
