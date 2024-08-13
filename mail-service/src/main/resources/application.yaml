@@ -1,0 +1,14 @@
+server:
+  port: 8084
+
+spring:
+  mail:
+    host: smtp.yandex.ru
+    port: 465
+    protocol: smtps
+    username:
+    password:
+
+service:
+  activation:
+    uri: http://127.0.0.1:8083/user/activation?id={id}
