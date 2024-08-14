@@ -6,8 +6,8 @@ spring:
     host: smtp.yandex.ru
     port: 465
     protocol: smtps
-    username:
-    password:
+    username: techMailTg@yandex.ru
+    password: fhyouulftvteqxpp
 
 service:
   activation:
