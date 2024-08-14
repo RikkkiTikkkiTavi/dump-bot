@@ -1,4 +1,4 @@
-package org.example.service.controller;
+package org.example.controller;
 
 import lombok.extern.log4j.Log4j;
 import org.example.entity.AppDocument;

@@ -16,6 +16,8 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 
+import java.util.Optional;
+
 import static org.example.entity.enams.UserState.BASIC_STATE;
 import static org.example.entity.enams.UserState.WAIT_FOR_EMAIL_STATE;
 import static org.example.service.enums.ServiceCommand.*;
@@ -28,11 +30,13 @@ public class MainServiceImpl implements MainService {
     private final AppUserDAO appUserDAO;
     private final FileService fileService;
 
-    public MainServiceImpl(RawDataDAO rawDataDAO, ProducerService producerService, AppUserDAO appUserDAO, FileService fileService) {
+    private final AppUserService appUserService;
+    public MainServiceImpl(RawDataDAO rawDataDAO, ProducerService producerService, AppUserDAO appUserDAO, FileService fileService, AppUserService appUserService) {
         this.rawDataDAO = rawDataDAO;
         this.producerService = producerService;
         this.appUserDAO = appUserDAO;
         this.fileService = fileService;
+        this.appUserService = appUserService;
     }
 
     @Override
@@ -51,7 +55,7 @@ public class MainServiceImpl implements MainService {
         } else if (BASIC_STATE.equals(userState)) {
             output = processServiceCommand(appUser, text);
         } else if (WAIT_FOR_EMAIL_STATE.equals(userState)) {
-            //TODO наладить связь с почтовым ящиком
+            output = appUserService.setEmail(appUser, text);
         } else {
             log.error("Unknown user state: " + userState);
             output = "Unknown error! Please enter /cancel and try again!";
@@ -129,8 +133,7 @@ public class MainServiceImpl implements MainService {
     private String processServiceCommand(AppUser appUser, String cmd) {
         var serviceCommand = ServiceCommand.fromValue(cmd);
         if (REGISTRATION.equals(serviceCommand)) {
-            //TODO реализовать регистрацию пользователей
-            return "Функция в разработке!";
+            return appUserService.registerUser(appUser);
         } else if (HELP.equals(serviceCommand)) {
             return help();
         } else if (START.equals(serviceCommand)) {
@@ -141,9 +144,10 @@ public class MainServiceImpl implements MainService {
     }
 
     private String help() {
-        return "Access commands:\n"
-                +"/cancel;\n"
-                +"/registration";
+        return """
+                Access commands:
+                /cancel;
+                /registration""";
     }
 
     private String cancelProcess(AppUser appUser) {
@@ -154,18 +158,18 @@ public class MainServiceImpl implements MainService {
 
     private AppUser findOrSaveAppUser(Update update) {
         User telegramUser = update.getMessage().getFrom();
-        AppUser persistentUser = appUserDAO.findAppUserByTelegramUserId(telegramUser.getId());
-        if (persistentUser == null) {
+        Optional<AppUser> persistentUser = appUserDAO.findByTelegramUserId(telegramUser.getId());
+        if (persistentUser.isEmpty()) {
             AppUser transientAppUser = AppUser.builder()
                     .telegramUserId(telegramUser.getId())
                     .userName(telegramUser.getUserName())
                     .firstName(telegramUser.getFirstName())
-                    .isActive(true)
+                    .isActive(false)
                     .state(BASIC_STATE)
                     .build();
             return appUserDAO.save(transientAppUser);
         }
-        return persistentUser;
+        return persistentUser.get();
     }
 
     private void saveRawData(Update update) {
