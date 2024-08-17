@@ -8,6 +8,13 @@ spring:
     protocol: smtps
     username:
     password:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: constantin
+    password: password
+    queues:
+      registration-mail: registration_mail
 
 service:
   activation:

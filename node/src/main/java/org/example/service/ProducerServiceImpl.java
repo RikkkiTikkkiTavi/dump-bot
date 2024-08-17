@@ -1,22 +1,22 @@
 package org.example.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
-import static org.example.model.RabbitQueue.ANSWER_MESSAGE;
-
 @Service
+@RequiredArgsConstructor
 public class ProducerServiceImpl implements ProducerService {
     private final RabbitTemplate rabbitTemplate;
 
-    public ProducerServiceImpl(RabbitTemplate rabbitTemplate) {
-        this.rabbitTemplate = rabbitTemplate;
-    }
+    @Value("${spring.rabbitmq.queues.answer-message}")
+    private String answerMessageQueue;
 
     @Override
     public void producerAnswer(SendMessage sendMessage) {
-        rabbitTemplate.convertAndSend(ANSWER_MESSAGE, sendMessage);
+        rabbitTemplate.convertAndSend(answerMessageQueue, sendMessage);
 
     }
 }
