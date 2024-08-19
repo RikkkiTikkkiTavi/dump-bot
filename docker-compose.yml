@@ -1,0 +1,167 @@
+version: '3.9'
+
+volumes:
+  rabbitmq-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+services:
+  dispatcher:
+    container_name: dispatcher
+    restart: on-failure
+    build:
+      context: ./
+      dockerfile: ./dispatcher/Dockerfile
+
+    ports:
+     - ${DISPATCHER_PORT}:${DISPATCHER_PORT}
+    environment:
+      DISPATCHER_PORT: ${DISPATCHER_PORT}
+      TG_BOT_NAME: ${TG_BOT_NAME}
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
+      TG_BOT_URI: ${TG_BOT_URI}
+      RABBIT_HOST: ${RABBIT_HOST}
+      RABBIT_PORT: ${RABBIT_PORT}
+      RABBIT_USERNAME: ${RABBIT_USERNAME}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+      RABBIT_TEXT_MESSAGE_UPDATE_QUEUE: ${RABBIT_TEXT_MESSAGE_UPDATE_QUEUE}
+      RABBIT_DOC_MESSAGE_UPDATE_QUEUE: ${RABBIT_DOC_MESSAGE_UPDATE_QUEUE}
+      RABBIT_PHOTO_MESSAGE_UPDATE_QUEUE: ${RABBIT_PHOTO_MESSAGE_UPDATE_QUEUE}
+      RABBIT_ANSWER_MESSAGE_QUEUE: ${RABBIT_ANSWER_MESSAGE_QUEUE}
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+    depends_on:
+      rabbit-mq:
+        condition: service_healthy
+
+  node:
+    container_name: node
+    restart: on-failure
+    build:
+      context: ./
+      dockerfile: ./node/Dockerfile
+    environment:
+      NODE_PORT: ${NODE_PORT}
+      RABBIT_HOST: ${RABBIT_HOST}
+      RABBIT_PORT: ${RABBIT_PORT}
+      RABBIT_USERNAME: ${RABBIT_USERNAME}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+      RABBIT_TEXT_MESSAGE_UPDATE_QUEUE: ${RABBIT_TEXT_MESSAGE_UPDATE_QUEUE}
+      RABBIT_DOC_MESSAGE_UPDATE_QUEUE: ${RABBIT_DOC_MESSAGE_UPDATE_QUEUE}
+      RABBIT_PHOTO_MESSAGE_UPDATE_QUEUE: ${RABBIT_PHOTO_MESSAGE_UPDATE_QUEUE}
+      RABBIT_ANSWER_MESSAGE_QUEUE: ${RABBIT_ANSWER_MESSAGE_QUEUE}
+      RABBIT_REGISTRATION_MAIL_QUEUE: ${RABBIT_REGISTRATION_MAIL_QUEUE}
+      POSTGRES_URL: ${POSTGRES_URL}
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
+      TG_BOT_FILE_INFO_URI: ${TG_BOT_FILE_INFO_URI}
+      TG_BOT_FILE_STORAGE_URI: ${TG_BOT_FILE_STORAGE_URI}
+      TG_BOT_URI: ${TG_BOT_URI}
+      SALT: ${SALT}
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+    depends_on:
+      rabbit-mq:
+        condition: service_healthy
+      postgres-db:
+        condition: service_healthy
+
+  rest-service:
+    container_name: rest-service
+    restart: on-failure
+    build:
+      context: ./
+      dockerfile: ./rest-service/Dockerfile
+
+    ports:
+      - ${REST_SERVICE_PORT}:${REST_SERVICE_PORT}
+    environment:
+      REST_SERVICE_PORT: ${REST_SERVICE_PORT}
+      POSTGRES_URL: ${POSTGRES_URL}
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SALT: ${SALT}
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+
+  mail-service:
+    container_name: mail-service
+    restart: on-failure
+    build:
+      context: ./
+      dockerfile: ./mail-service/Dockerfile
+    environment:
+      MAIL_SERVICE_PORT: ${MAIL_SERVICE_PORT}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_PROTOCOL: ${MAIL_PROTOCOL}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      RABBIT_HOST: ${RABBIT_HOST}
+      RABBIT_PORT: ${RABBIT_PORT}
+      RABBIT_USERNAME: ${RABBIT_USERNAME}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+      RABBIT_REGISTRATION_MAIL_QUEUE: ${RABBIT_REGISTRATION_MAIL_QUEUE}
+      ACTIVATION_URI: ${ACTIVATION_URI}
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+    depends_on:
+      rabbit-mq:
+        condition: service_healthy
+
+  rabbit-mq:
+    container_name: rabbit-mq
+    hostname: rabbitmq
+    image: rabbitmq:3.12.12-management-alpine
+    ports:
+      - ${RABBIT_AMQP_PORT_MAPPING}
+      - ${RABBIT_GUI_PORT_MAPPING}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "--silent", "--quiet", "ping" ]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+
+  postgres-db:
+    container_name: postgres-db
+    hostname: postgres
+    image: postgres:14.5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - ${POSTGRES_PORT_MAPPING}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME} -d ${POSTGRES_DATABASE} -h 127.0.0.1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped

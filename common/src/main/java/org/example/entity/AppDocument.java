@@ -19,5 +19,5 @@ public class AppDocument {
     @OneToOne
     private BinaryContent binaryContent;
     private String mimeType;
-    private Integer fileSize;
+    private Long fileSize;
 }

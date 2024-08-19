@@ -6,11 +6,16 @@
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/dispatcher/pom.xml" />
+        <option value="$PROJECT_DIR$/mail-service/pom.xml" />
+        <option value="$PROJECT_DIR$/common/pom.xml" />
+        <option value="$PROJECT_DIR$/node/pom.xml" />
+        <option value="$PROJECT_DIR$/rest-service/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
       <set>
         <option value="$PROJECT_DIR$/common-rabbitmq/pom.xml" />
+        <option value="$PROJECT_DIR$/common-utils/pom.xml" />
       </set>
     </option>
   </component>

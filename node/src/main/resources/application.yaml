@@ -20,7 +20,7 @@ spring:
   jpa:
     generate-ddl: true
 
-token: <add tg bot token>
+token: 7114627884:AAG5vECaEOTwQfLbYOi9u6W1mWEeaU2d7lM
 service:
   file_info:
     uri: https://api.telegram.org/bot{token}/getFile?file_id={fileId}

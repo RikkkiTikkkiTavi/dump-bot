@@ -1,21 +1,21 @@
 server:
-  port: 8081
+  port: ${DISPATCHER_PORT:8084}
   ssl:
     enabled: false
 
 bot:
-  name: together_cook_bot
-  token: 7114627884:AAG5vECaEOTwQfLbYOi9u6W1mWEeaU2d7lM
-  uri: https://ac74-51-77-20-38.ngrok-free.app
+  name: ${TG_BOT_NAME}
+  token: ${TG_BOT_TOKEN}
+  uri: ${TG_BOT_URI}
 
 spring:
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: constantin
-    password: password
+    host: ${RABBIT_HOST:localhost}
+    port: ${RABBIT_PORT:5673}
+    username: ${RABBIT_USERNAME:constantin}
+    password: ${RABBIT_PASSWORD:password}
     queues:
-      text-message-update: text_message_update
-      doc-message-update: doc_message_update
-      photo-message-update: photo_message_update
-      answer-message: answer_message
+      text-message-update: ${RABBIT_TEXT_MESSAGE_UPDATE_QUEUE}
+      doc-message-update: ${RABBIT_DOC_MESSAGE_UPDATE_QUEUE}
+      photo-message-update: ${RABBIT_PHOTO_MESSAGE_UPDATE_QUEUE}
+      answer-message: ${RABBIT_ANSWER_MESSAGE_QUEUE}

@@ -1,11 +1,11 @@
 server:
-  port: 8083
-
+  port: ${REST_SERVICE_PORT:8086}
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5431/cook_together_db
-    username: constantin
-    password: password
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5433/pogreb}
+    username: ${POSTGRES_USERNAME:userok}
+    password: ${POSTGRES_PASSWORD:P@ssw0rd}
   jpa:
     generate-ddl: true
-salt: 8De601a74a6c6H7b4E9c2f9f38cC5e66
+
+salt: ${SALT:test}
